@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><record_update table="sys_ui_script">
+    <sys_ui_script action="INSERT_OR_UPDATE">
+        <active>true</active>
+        <description/>
+        <global>false</global>
+        <name>x_bn.GetPoints</name>
+        <script><![CDATA[var x_bn = x_bn || {};
+
+x_bn.GetPoints = (function() {
+    "use strict";
+	var NEARBY = 0.5; //miles
+
+    function doXHR(table, query, callback) {
+        var xhttp = new XMLHttpRequest();
+        var GETSTRING = "/api/now/table/" + table + "?" + query;
+        xhttp.open("GET", GETSTRING);
+		xhttp.addEventListener("error", function() { 
+			console.error("Connection error", xhttp);
+		});
+
+		xhttp.addEventListener("load", function() {
+			var responseObj = JSON.parse(xhttp.response);
+			if (responseObj.result)
+				callback(responseObj.result);
+			else
+				console.error("No result for query", xhttp);
+        });
+
+        xhttp.setRequestHeader("Content-type", "application/json");
+        xhttp.setRequestHeader("Accept", "application/json");
+        xhttp.setRequestHeader("X-UserToken", window.g_ck);
+        xhttp.send();
+
+        return xhttp;
+    }
+
+    function copyObj(obj) {
+        var copy = {};
+        for (var prop in obj)
+            copy[prop] = obj[prop];
+        return copy;
+    }
+	
+	function convertToSimplePoint(point) {
+		var newPoint = {};
+		if (typeof point.longitude == 'function')
+			newPoint.longitude = point.longitude();
+		else if (point.hasOwnProperty('lng'))
+			newPoint.longitude = point.lng;
+		else
+			newPoint.longitude = point.longitude;
+		
+		if (typeof point.latitude == 'function')
+			newPoint.latitude = point.latitude();
+		else if (point.hasOwnProperty('lat'))
+			newPoint.latitude = point.lat;
+		else
+			newPoint.latitude = point.latitude;
+		
+		return newPoint;
+	}
+
+    return {
+
+        getPoints: function(SWpoint, NEpoint, callback) {
+			var table = "x_bn_location";
+            var fields = "name,latitude,longitude,sys_id";
+			
+			this.getPointsForTable(table, fields, SWpoint, NEpoint, callback);
+        },
+		
+		getPointsForTable : function(table, fields, SWpoint, NEpoint, callback) {
+			SWpoint = convertToSimplePoint(SWpoint);
+			NEpoint = convertToSimplePoint(NEpoint);
+            
+			var points = [];
+            var query = "sysparm_query=sys_class_name%3D" + table;
+
+            if (NEpoint && SWpoint)
+                query += "^latitude%3C%3D" + NEpoint.latitude + "^longitude%3C%3D" + NEpoint.longitude + "^latitude>%3D" + SWpoint.latitude + "^longitude>%3D" + SWpoint.longitude;
+
+            query += "&sysparm_fields=" + fields + "&sysparm_exclude_reference_link=true&sysparm_limit=50";
+
+            doXHR(table, query, function(result) {
+                for (var i = 0; i < result.length; i++) {
+                    var copy = copyObj(result[i]);
+                    points.push(copy);
+                }
+				callback(points);
+
+            });
+		},
+
+        type: "GetPoints"
+    };
+}());
+]]></script>
+        <script_name>GetPoints</script_name>
+        <sys_class_name>sys_ui_script</sys_class_name>
+        <sys_created_by>admin</sys_created_by>
+        <sys_created_on>2018-04-25 16:05:48</sys_created_on>
+        <sys_id>5cca26b7b32113009b67a13816a8dc7c</sys_id>
+        <sys_mod_count>9</sys_mod_count>
+        <sys_name>x_bn.GetPoints</sys_name>
+        <sys_package display_value="BookNow" source="x_bn">fa506eb3b32113009b67a13816a8dc58</sys_package>
+        <sys_policy/>
+        <sys_scope display_value="BookNow">fa506eb3b32113009b67a13816a8dc58</sys_scope>
+        <sys_update_name>sys_ui_script_5cca26b7b32113009b67a13816a8dc7c</sys_update_name>
+        <sys_updated_by>admin</sys_updated_by>
+        <sys_updated_on>2018-05-02 16:51:37</sys_updated_on>
+        <ui_type/>
+        <use_scoped_format>false</use_scoped_format>
+    </sys_ui_script>
+</record_update>
